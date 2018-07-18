@@ -1,0 +1,82 @@
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+</head>
+<body>
+
+<div id="form" style="display:none;">
+
+<p>
+  Имя: <input id="name" type="text" value="Имя">
+</p>
+<p>
+  Пол: 		<br />
+			<input type="radio" name="sex" value="Мужской" checked >Мужской<Br>
+			<input type="radio" name="sex" value="Женский">Женский<Br>
+</p>
+<p>
+  Дата рождения: <input id="birthday" type="date">
+</p>
+<p>
+  Любимый цвет: <br />
+				<select id="color" size=1>
+					<option>зеленый</option>
+					<option>красный</option>
+					<option>синий</option>
+				</select>	
+	
+</p>
+<p>
+  Согласие на обработку даных: <input id="agreement" type="checkbox">
+</p>
+
+<p>
+  <button id="showme">Показать анкету</button>
+</p>
+</div> <!-- form -->
+<div id="showformdiv">
+<p>
+  <button id="showform" >Показать форму</button>
+</p>
+</div>
+
+<script>
+$( "#showme" ).click(function() {
+  $( "#form" ).hide( "slow", function () {
+		
+		var sex_val = $(":radio[name=sex]").filter(":checked").val();
+	
+		var bday = $( "#birthday" ).val();
+	
+		var chosen_color = $( "#color option:selected" ).text();
+	
+		if ($('#agreement').is(':checked')){
+			var agree = "Да";
+		} else {
+			var agree = "Нет";
+		}
+	
+		$message = "имя: "+ $( "#name" ).val()  +"\n"+
+		"пол: "+ sex_val +"\n"+
+		"дата рождения: "+ bday +"\n"+
+		"любимый цвет: "+ chosen_color +"\n"+
+		"согласие на обработку данных: "+ agree +"\n";
+	
+		alert( $message );
+		
+		
+		 $( "#showform" ).show( "slow" );
+  });
+});
+
+$( "#showform" ).click(function() {
+  $( "#form" ).show( "slow", function() {
+	$( "#showform" ).hide();
+	}
+  );
+});
+
+</script>
+
+</body>
+</html>
