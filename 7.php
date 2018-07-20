@@ -3,9 +3,10 @@ include "header7.php";
 include "db.php";
 
 ?>
-
+<h1>Задание 7</h1>
+<p>
 Страна: <input type='text' id='cntr' name='country'>&nbsp;
-<br />
+</p>
 
 <div id='cities'></div>
 
@@ -64,19 +65,19 @@ var req2 = $.ajax({
      var c_arr = response.split("/");
 	c_arr.forEach(function(item,i,arr){
 		if ( item.length > 0 ) {
-		// alert(item);
+		// alert(item); //debug
 		// вычислить location из названия (элемента массива), кроме пустого
 		    geocoder.geocode( { 'address': item}, function(results, status) {
       			if (status == 'OK') {
-		        var marker = new google.maps.Marker({
-		            map: map,
-		            position: results[0].geometry.location
-		        });
-		      } else {alert("Fu")} ;
+
+				addMarker(results[0].geometry.location, item); 
+
+		      } else { /* alert("Fu") */ } ;
 		}); // geocode
-		// addMarker(location);
+
 		}; // пустой item
 		});
+		showOverlays();
           // $("#cities").html(response);
      }); // req for markers from input
 
@@ -137,21 +138,21 @@ var req2 = $.ajax({
      var c_arr = response.split("/");
 	c_arr.forEach(function(item,i,arr){
 		if ( item.length > 0 ) {
-		// alert(item);
+		// alert(item); //debug
 		// вычислить location из названия (элемента массива), кроме пустого
 		    geocoder.geocode( { 'address': item}, function(results, status) {
       			if (status == 'OK') {
-		        var marker = new google.maps.Marker({
-		            map: map,
-		            position: results[0].geometry.location
-		        });
-		      };
+
+				addMarker(results[0].geometry.location, item); 
+
+		      } else { /* alert("Fu") */ } ;
 		}); // geocode
-		// addMarker(location);
+
 		}; // пустой item
 		});
+	showOverlays();
           // $("#cities").html(response);
-     }); //markers
+     }); // req for markers from input
 
 });
 
@@ -160,24 +161,6 @@ var req2 = $.ajax({
 
 <div id="map" class="map"></div>
 
-<script
-
-// initMap() - функция инициализации карты
-
-function initMap() {
-	// Координаты центра на карте. Широта: 56.2928515, Долгота: 43.7866641
-	var centerLatLng = new google.maps.LatLng(56.2928515, 43.7866641);
-	// Обязательные опции с которыми будет проинициализированна карта
-	var mapOptions = {
-		center: centerLatLng, // Координаты центра мы берем из переменной centerLatLng
-		zoom: 8               // Зум по умолчанию. Возможные значения от 0 до 21
-	};
-	// Создаем карту внутри элемента #map
-	var map = new google.maps.Map(document.getElementById("map"), mapOptions);	
-}
-// Ждем полной загрузки страницы, после этого запускаем initMap()
-google.maps.event.addDomListener(window, "load", initMap);
-</script>
 
 
 <?php

@@ -1,4 +1,5 @@
-var map;
+var tmap; 
+var geocoder;
 var markersArray = [];
 
 // initMap() - функция инициализации карты
@@ -14,15 +15,18 @@ function initMap() {
     };
  
     // Создаем карту внутри элемента #map
-    var map = new google.maps.Map(document.getElementById("map"), mapOptions);
+    tmap = new google.maps.Map(document.getElementById("map"), mapOptions);
 }
 
-function addMarker(location) {
+function addMarker(location,title) {
+  console.log('addMarker');
   marker = new google.maps.Marker({
     position: location,
-    map: map
+    map: tmap,
+    title: title
   });
   markersArray.push(marker);
+  console.log(marker);
 }
 
 // Removes the overlays from the map, but keeps them in the array
@@ -38,7 +42,7 @@ function clearOverlays() {
 function showOverlays() {
   if (markersArray) {
     for (i in markersArray) {
-      markersArray[i].setMap(map);
+      markersArray[i].setMap(tmap);
     }
   }
 }
