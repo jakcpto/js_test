@@ -13,71 +13,76 @@ function updateOperationJournal() {
 	let startDate = responseBegin.getResponseText().split(".").reverse().join("-"); // дату начала загрузки
 	let responseEnd = ui.prompt("Введите дату окончания загрузки в формате", "dd.mm.yyyy", ui.ButtonSet.OK_CANCEL);
 	let endDate = responseEnd.getResponseText().split(".").reverse().join("-"); // дату окончания загрузки
+  
+  let defParams = {
+		headers: {
+			Accept: "application/json",
+			Authorization: GetToken(),
+		},
+	}
 
 	// Получаем список счетов через API:
-	let orders = getOrders();
 	let resultArray = [];
 
-	Logger.log(getAppointments());
-
 	getAppointments().map((item) => {
-		let clientById = getClienteNameByClienteId(item.client_id);
-		let order = orders.filter((orderItem) => orderItem.orderId === item.order_id)[0];
+    Utilities.sleep(500);
+    
+    const client = getClientById(item.clientId);
+    const user = getUserById(item.userId);
+    const entries = item.orderId && getEntriesByOrderId(item.orderId);
 
 		resultArray.push([
-			item.date,
-			`${item.time} ${item.duration} мин`,
-			item.status_text,
-			clientById[0][1],
-			clientById[0][1],
-			order ? order.title : "",
-			"",
-			order ? parseFloat(order.sum) : "",
-			"",
-			"",
-			"",
-			"",
-			item.username,
-			item.note,
-			getClinicNameByClinicId(item.clinic_id),
+			item.date, 
+			`${item.time} ${item.duration} мин`, 
+			getStatus(item.status),
+      [client.surname, client.name, client.secondName].join(" "),
+      client.birthdate,
+      item.orderId && entries.map(item => item.title).join("\n"),
+      item.orderId && entries.length,
+      item.orderId && parseFloat(entries.length > 1 ? entries.reduce((prev, curr) => prev.finalsum + curr.finalsum) : entries[0].finalsum),
+      "", // диск
+      "", // врач
+      "", // реферал
+      "", // company ? company.title : "", // партнеры
+      `${user.surname} ${user.name.charAt(0)}. ${user.secondName.charAt(0)}.`,
+      item.note,
+      getClinicById(item.clinicId).title
 		]);
 	});
 
-	// for (let i = 0; i < arrayOfAppointmentPages.length; i++) {
-	// 	for (let k = 0; k < arrayOfAppointmentPages[i].data.length; k++) {
-	// 		let accesToken = GetToken();
-	// 		let order = orders.filter((item) => item.orderId == arrayOfAppointmentPages[i].data[k].order_id)[0];
-	// 		let sum;
-	// 		let title;
-	// 		if (order) {
-	// 			sum = parseFloat(order.sum);
-	// 			title = order.title;
-	// 		} else {
-	// 			sum = "";
-	// 			title = "";
-	// 		}
-
-	// 		resultArray.push([
-	// 			arrayOfAppointmentPages[i].data[k].date,
-	// 			arrayOfAppointmentPages[i].data[k].time + " " + arrayOfAppointmentPages[i].data[k].duration + " мин",
-	// 			arrayOfAppointmentPages[i].data[k].status_text,
-	// 			getClienteNameByClienteId(arrayOfAppointmentPages[i].data[k].client_id, accesToken)[0][0],
-	// 			getClienteNameByClienteId(arrayOfAppointmentPages[i].data[k].client_id, accesToken)[0][1],
-	// 			title,
-	// 			"",
-	// 			sum,
-	// 			"",
-	// 			"",
-	// 			"",
-	// 			"",
-	// 			arrayOfAppointmentPages[i].data[k].username,
-	// 			arrayOfAppointmentPages[i].data[k].note,
-	// 			getClinicNameByClinicId(arrayOfAppointmentPages[i].data[k].clinic_id, accesToken),
-	// 		]);
-	// 	}
-	// }
-
 	// Вспомогательные функции:
+
+	function getStatus (status) {
+		switch (status) {
+			case "need_approval" : return "Не подтвержден";
+			case "confirmed_by_administrator": return "Подтвержден";
+			case "approved": return "Подвержден";
+			case "arrived": return "Клиент пришел";
+			case "serviced": return "Прием завершен";
+			case "billed": return "Счет выставлен";
+			case "paid": return "Счет оплачен";
+			case "canceled": return "Отменен";
+			case "failed": return "Неявка";
+		}
+	};
+
+
+	function getClientById(id) {
+    return JSON.parse(UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/clients/${id}`, defParams));
+	}
+
+  function getEntriesByOrderId(id) {
+    return JSON.parse(UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/entries?orderId=${id}&limit=100&offset=0`, defParams)).data;
+  }
+
+  function getClinicById(id) {
+    Utilities.sleep(200);
+    return JSON.parse(UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/clinics/${id}`, defParams))
+  }
+
+  function getUserById(id) {
+    return JSON.parse(UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/users/${id}`, defParams))
+  }
 
 	// Получаем токен для авторизации
 	function GetToken() {
@@ -126,38 +131,6 @@ function updateOperationJournal() {
 		});
 	}
 
-	function getOrders() {
-		let resultArray = [];
-		let pageNumberNext = 0;
-		let resultFetch = [];
-
-		do {
-			resultFetch = JSON.parse(
-				UrlFetchApp.fetch(
-					`https://${lnkpart}.medods.ru/api/v2/orders?dateAfter=${startDate}&dateBefore=${endDate}&limit=100&offset=${pageNumberNext}`,
-					{
-						headers: {
-							accept: "application/json",
-							Authorization: GetToken(),
-						},
-					}
-				)
-			);
-
-			resultFetch.data.map((item) => {
-				resultArray.push({
-					orderId: item.id,
-					sum: item.finalSum,
-				});
-			});
-
-			pageNumberNext = resultArray.length;
-			Utilities.sleep(1000);
-		} while (pageNumberNext !== resultFetch.totalItems);
-
-		return resultArray;
-	}
-
 	function getAppointments() {
 		let resultArray = [];
 		let pageNumberNext = 0;
@@ -183,90 +156,16 @@ function updateOperationJournal() {
 			resultArray.push(...resultFetch.data);
 			pageNumberNext = resultArray.length;
 
-			Logger.log(
-				`resultFetch.totalItems : ${resultFetch.totalItems} resultArray : ${pageNumberNext} token : ${token}`
-			);
-
 			Utilities.sleep(1000);
 		} while (pageNumberNext !== resultFetch.totalItems);
-
-		Logger.log(resultArray);
-
+    
 		return resultArray;
-	}
-
-	// Возвращает одну услгу по своему ID, состоящий  названия услуги
-	function getEntryArrayById(arrayentrysId) {
-		let title = "";
-		for (let i = 0; i < arrayentrysId.length; i++) {
-			let params = {
-				headers: {
-					accept: "application/json",
-					Authorization: GetToken(),
-				},
-			};
-
-			let dataObj = JSON.parse(
-				UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/entries?id=${arrayentrysId[i].id}`, params)
-			);
-			if (i == 0) {
-				title = dataObj.data[0].title;
-			} else {
-				title = title + "\n" + dataObj.data[0].title;
-			}
-		}
-		return title;
-	}
-
-	// Возвращает строку с названием клиники:
-
-	function getClinicNameByClinicId(clinicId) {
-		let params = {
-			headers: {
-				accept: "application/json",
-				Authorization: GetToken(),
-			},
-		};
-
-		let dataObj = JSON.parse(
-			UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/clinics?id=${clinicId}&limit=100&offset=0`, params)
-		);
-		Utilities.sleep(1000);
-		return dataObj.data[0].title;
-	}
-
-	// Возвращает строку состоящую из Фамилии Имени и Отчества пациенты и даты рождения:
-
-	function getClienteNameByClienteId(clienteId) {
-		let arreyRezal = [];
-		let params = {
-			headers: {
-				accept: "application/json",
-				Authorization: GetToken(),
-			},
-		};
-		Logger.log("dataObj call");
-		let dataObj = JSON.parse(
-			UrlFetchApp.fetch(`https://${lnkpart}.medods.ru/api/v2/clients?id=${clienteId}&limit=100&offset=0`, params)
-		);
-		let fio;
-		let birthdate;
-		if (dataObj.data[0]) {
-			fio = dataObj.data[0].surname + " " + dataObj.data[0].name + " " + dataObj.data[0].second_name;
-			birthdate = dataObj.data[0].birthdate;
-		} else {
-			fio = "";
-			birthdate = "";
-		}
-		arreyRezal.push([fio, birthdate]);
-		Utilities.sleep(5000);
-		return arreyRezal;
 	}
 
 	// Вставляем :
 
 	let spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-	let operationJournalSheet = spreadSheet.getSheetByName("КТ Дмд");
+	let operationJournalSheet = spreadSheet.getSheetByName("Лист1");
 	let kont = operationJournalSheet.getRange("A2:A").getValues();
 	let lr = 0;
 	for (let i = 0; i < kont.length; i++) {
